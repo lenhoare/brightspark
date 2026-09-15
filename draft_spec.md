@@ -20,16 +20,23 @@ Two outputs, both useful, in priority order:
    until Phase 3 produces evidence the signal is real and not just
    quantisation/precision noise or a restatement of target entropy.
 
+## Status (2026-09-15)
+
+Phases 0 and 1 are **done and verified on real DSpark output**. The Phase 0
+gate passes exactly: llama.cpp's own report and the trace independently agree
+at 437 accepted / 1372 generated. Phase 2 (prompt bank) is the next step and
+is authoring work, not engineering. See `README.md` for how to run it.
+
 ## Models
 
 - **Target:** `openbmb/MiniCPM5-2B` (GGUF, Q8_0 or F16 — small enough to run
   near-full-precision on the 3060, sidestepping the draft/target hidden-state
   precision mismatch that hurts DFlash on quantised targets)
-- **Draft:** `openbmb/MiniCPM5-2B-DSpark` (~324M params, 5 layers, block
-  size 7, conditions on target hidden layers `[1, 10, 20, 30, 39]`)
-- **Runtime:** llama.cpp master, `--spec-type draft-dspark` (already merged,
-  documented in `docs/speculative.md` — no fork needed to get baseline
-  running)
+- **Draft:** `MiniCPM5-2.6B-DSpark.gguf` (334 MB on disk)
+- **Runtime:** llama.cpp branch `spec-trace` in `~/llama.cpp` (from master
+  b10989-38a5b42d9), which adds `--spec-trace`. DSpark is served by the
+  **dflash** implementation with an `is_dspark` flag, not by the eagle3 one —
+  `common_speculative_impl_draft_dflash` in `common/speculative.cpp`.
 
 ## Phase 0 — Baseline run
 
@@ -48,6 +55,13 @@ llama-server \
 Note the aggregate acceptance rate llama.cpp reports at the end of a run —
 this becomes the sanity check for Phase 1's per-block logging (averaged
 logged acceptance should reproduce this number).
+
+**Disable the draft's own early-stop: `--spec-draft-p-min 0`.** This is not
+optional. `p_min` truncates a block *before the target ever sees it*, so
+`accepted_len` would silently conflate "the target rejected" with "the draft
+gave up" — two different signals. The harness pins it to 0, `draft_stop`
+records which reason ended each block, and the schema checker raises if it
+finds `p_min > 0` truncations in a trace being analysed.
 
 **Pin decoding params for the whole study.** Temperature 0 / greedy, fixed
 seed, fixed context length. Acceptance semantics change completely under
@@ -138,9 +152,26 @@ Field notes:
   every block, not just mismatches — the non-mismatch blocks are the
   control set for any "mismatch clusters by subject" claim.
 
-Confirm whether the DSpark head exposes full softmax by default or just
-argmax — top-1 probability and entropy per position need to come from
-somewhere; may require a small addition if it's not already surfaced.
+### Resolved: where the certainty signal comes from
+
+DSpark exposes **its own per-position confidence scalar** — the value that
+`--spec-draft-p-min` thresholds on, read from `llama_get_embeddings_nextn`.
+This is the model's self-reported certainty and is logged as `draft_conf`.
+The instrumentation reads it even when `p_min = 0`, so the signal is captured
+on runs that disable the early-stop.
+
+Prefer it over the token head. Measured on the first real run (n=198 blocks):
+
+| signal | corr with `accepted_len` | range |
+|---|---|---|
+| `draft_conf` (native head) | **+0.798** | 0.71 – 0.999 |
+| `draft_p` (token top-1)    | +0.751 | saturates at 1.000 |
+
+The draft sampler runs `top_k = 10`, so `draft_p` and `draft_entropy` are
+computed over a **top-10 truncated, renormalised** candidate set, not the full
+softmax. That destroys resolution at the high-confidence end, which is exactly
+where most positions sit. `draft_conf` has no such problem. Both are logged;
+`draft_n_cand` records the truncation so the caveat travels with the data.
 
 ## Phase 2 — Test prompt bank
 
@@ -150,6 +181,23 @@ Fixed set, reused across every run for comparability:
 - **Twist** — a joke or narrative with a punchline/reversal
 - **Technical** — dense, jargon-heavy factual text
 - **Left-turn** — deliberately creative, unpredictable continuation
+
+**"Boring" must mean predictable-to-the-draft, not repetitive-to-a-human.**
+The smoke run inverted the spec's prediction: the boilerplate prompt accepted
+2.85 and the left-turn prompt 5.05. The reason is visible in the mismatches —
+the boilerplate's divergences land on *structure*: field names
+(`' timestamp'`→`' log'`, `' status'`→`' latency'`, `'='`→`' worker'`) and
+digits (`'02'`→`'20'`). A templated log line is adversarial for a 334 MB draft,
+because reproducing it means knowing which field comes next and incrementing a
+numeral. Meanwhile the "creative" prompt drew a formulaic continuation the
+draft tracked easily.
+
+Two consequences for the bank: build Boring from text that is *easy to
+predict* (prose with high redundancy), not text that merely repeats; and keep
+numerals and structured formats out of every category unless they are the
+thing being tested, since they dominate the mismatch counts wherever they
+appear. This is also the first evidence for the blind-spot thesis — the
+mismatches cluster by content type, not uniformly.
 
 **Matched-pair subset (Twist).** The between-category comparison is
 confounded — the four categories differ in vocabulary rarity, register, and

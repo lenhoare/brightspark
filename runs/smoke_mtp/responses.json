@@ -1,0 +1,97 @@
+[
+  {
+    "prompt_id": "boring_00",
+    "ok": true,
+    "content": "2026-01-01T00:00:01Z INFO worker=3 status=ok latency_ms=12\n2026-00:00:02Z INFO worker=3 status=00:00:02Z INFO worker",
+    "timings": {
+      "cache_n": 0,
+      "prompt_n": 51,
+      "prompt_ms": 509.057,
+      "prompt_per_token_ms": 9.981509803921568,
+      "prompt_per_second": 100.18524448146279,
+      "predicted_n": 64,
+      "predicted_ms": 1485.072,
+      "predicted_per_token_ms": 23.572571428571425,
+      "predicted_per_second": 42.42218559100165,
+      "draft_n": 58,
+      "draft_n_accepted": 54
+    },
+    "wall_s": 1.9996764659881592
+  },
+  {
+    "prompt_id": "technical_00",
+    "ok": true,
+    "content": "\n\n1. **What autoregressive decoding normally costs**\n   - A transformer decoder generates tokens one at a time.\n   - At step t, the model must compute attention over all previous tokens (1..t) plus the new token.\n   - If you recompute attention from scratch each step, the",
+    "timings": {
+      "cache_n": 0,
+      "prompt_n": 36,
+      "prompt_ms": 319.326,
+      "prompt_per_token_ms": 8.870166666666668,
+      "prompt_per_second": 112.73745326093082,
+      "predicted_n": 64,
+      "predicted_ms": 3564.745,
+      "predicted_per_token_ms": 56.58325396825396,
+      "predicted_per_second": 17.67307338954119,
+      "draft_n": 163,
+      "draft_n_accepted": 39
+    },
+    "wall_s": 4.0230584144592285
+  },
+  {
+    "prompt_id": "twist_00_flat",
+    "ok": true,
+    "content": "\n\nHere is a short paragraph to finish the story:\n\n...he finds the chair empty, the window cracked, and a single, yellowed page tucked beneath the seat. He picks it up, realizing it is the first page of a novel he had been reading for months, and as he turns it over, he",
+    "timings": {
+      "cache_n": 0,
+      "prompt_n": 42,
+      "prompt_ms": 312.839,
+      "prompt_per_token_ms": 7.448547619047619,
+      "prompt_per_second": 134.25436086932896,
+      "predicted_n": 64,
+      "predicted_ms": 4649.794,
+      "predicted_per_token_ms": 73.80625396825397,
+      "predicted_per_second": 13.548987331481781,
+      "draft_n": 206,
+      "draft_n_accepted": 31
+    },
+    "wall_s": 5.098576068878174
+  },
+  {
+    "prompt_id": "twist_00_turn",
+    "ok": true,
+    "content": " the chair is empty.\n\n<think>\nThe user wants me to finish a story in one short paragraph, ending with a genuine surprise. Let me think about what would be a genuine, unexpected twist.\n\nThe setup: A man walks into a library every day for a year, sits in the same chair by the window",
+    "timings": {
+      "cache_n": 0,
+      "prompt_n": 48,
+      "prompt_ms": 327.621,
+      "prompt_per_token_ms": 6.8254375,
+      "prompt_per_second": 146.51075480509493,
+      "predicted_n": 64,
+      "predicted_ms": 2543.835,
+      "predicted_per_token_ms": 40.37833333333334,
+      "predicted_per_second": 24.765757213026788,
+      "draft_n": 112,
+      "draft_n_accepted": 47
+    },
+    "wall_s": 3.011761426925659
+  },
+  {
+    "prompt_id": "leftturn_00",
+    "ok": true,
+    "content": " the decision was\n\n<think>\nThe user wants me to continue a text in an \"unpredictable direction.\" The text starts with: \"The committee had reached a decision about the bridge, and the decision was\"\n\nI need to take this in a surprising, unexpected direction. Let me think about what would be truly",
+    "timings": {
+      "cache_n": 0,
+      "prompt_n": 19,
+      "prompt_ms": 289.616,
+      "prompt_per_token_ms": 15.242947368421051,
+      "prompt_per_second": 65.60411027015083,
+      "predicted_n": 64,
+      "predicted_ms": 2705.558,
+      "predicted_per_token_ms": 42.94536507936508,
+      "predicted_per_second": 23.28539990641487,
+      "draft_n": 115,
+      "draft_n_accepted": 45
+    },
+    "wall_s": 3.1447713375091553
+  }
+]

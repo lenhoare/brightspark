@@ -1,0 +1,2 @@
+# analysis only; the harness and report core run on the stdlib alone
+matplotlib>=3.7

@@ -1,0 +1,97 @@
+[
+  {
+    "prompt_id": "boring_00",
+    "ok": true,
+    "content": "2026-01-01T00:00:01Z INFO worker=3 status=ok latency_ms=12\n...\n2026-01-01T00:00:20Z INFO worker=3 status=ok latency_ms=12\n\nEnsure that the log lines are correctly formatted and that the timestamp is updated correctly.\n\nSolution:\n```python\nimport time\n\ndef log_worker_status(worker_id, status, latency_ms, log_file):\n    timestamp = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())\n    log_line = f\"{timestamp}",
+    "timings": {
+      "cache_n": 0,
+      "prompt_n": 43,
+      "prompt_ms": 106.924,
+      "prompt_per_token_ms": 2.486604651162791,
+      "prompt_per_second": 402.15480154128164,
+      "predicted_n": 128,
+      "predicted_ms": 914.543,
+      "predicted_per_token_ms": 7.201125984251968,
+      "predicted_per_second": 138.86717190990473,
+      "draft_n": 230,
+      "draft_n_accepted": 94
+    },
+    "wall_s": 1.0240771770477295
+  },
+  {
+    "prompt_id": "technical_00",
+    "ok": true,
+    "content": " Then, explain how KV caching is used in the context of the GPT-2 model, and why it is particularly beneficial for long sequences.\n\n4. **Comparison with Other Techniques**\n   - **Quantization**: Discuss how quantization can reduce the memory footprint of the model, but it does not directly address the issue of KV cache size.\n   - **Model Pruning**: Explain how pruning can reduce the number of parameters, but it does not directly impact the KV cache size.\n   - **Mixed Precision Training**: Describe how mixed precision training can speed up training but does not directly affect the KV cache size.\n\n### 5. Implications",
+    "timings": {
+      "cache_n": 0,
+      "prompt_n": 33,
+      "prompt_ms": 21.293,
+      "prompt_per_token_ms": 0.6452424242424242,
+      "prompt_per_second": 1549.8051002676937,
+      "predicted_n": 128,
+      "predicted_ms": 1147.404,
+      "predicted_per_token_ms": 9.034677165354331,
+      "predicted_per_second": 110.68464115516419,
+      "draft_n": 334,
+      "draft_n_accepted": 78
+    },
+    "wall_s": 1.179502010345459
+  },
+  {
+    "prompt_id": "twist_00_flat",
+    "ok": true,
+    "content": " the chair is empty. What happened? The man had been a librarian for a year. The story is a reminder of the importance of staying in your own mind. By staying focused on your own thoughts, you can maintain your own mind. The story is a reminder of the importance of staying in your own mind. By staying focused on your own thoughts, you can maintain your own mind. The story is a reminder of the importance of staying in your own mind. By staying focused on your own thoughts, you can maintain your own mind. The story is a reminder of the importance of staying in your own mind. By staying focused on your",
+    "timings": {
+      "cache_n": 0,
+      "prompt_n": 42,
+      "prompt_ms": 23.242,
+      "prompt_per_token_ms": 0.5533809523809524,
+      "prompt_per_second": 1807.0734016005506,
+      "predicted_n": 128,
+      "predicted_ms": 823.236,
+      "predicted_per_token_ms": 6.482173228346457,
+      "predicted_per_second": 154.2692496440875,
+      "draft_n": 214,
+      "draft_n_accepted": 96
+    },
+    "wall_s": 0.8552854061126709
+  },
+  {
+    "prompt_id": "twist_00_turn",
+    "ok": true,
+    "content": " the chair is empty. He looks around and finds a note on the floor: \"The library is now a caf\u00e9. Come back next week.\" The man laughs, then looks at the note again. He realizes the note was written in the same font as the library's old sign. He smiles, and the man knows the truth.\" \n\n### 2. **Character Development**\n   - **The Man**: The man's journey from a regular library visitor to a participant in a new concept (the caf\u00e9) shows his openness to change. His initial surprise and subsequent realization of the truth add depth to his character.\n   - **The",
+    "timings": {
+      "cache_n": 0,
+      "prompt_n": 48,
+      "prompt_ms": 24.456,
+      "prompt_per_token_ms": 0.5095,
+      "prompt_per_second": 1962.7085377821395,
+      "predicted_n": 128,
+      "predicted_ms": 1504.928,
+      "predicted_per_token_ms": 11.849826771653545,
+      "predicted_per_second": 84.38941929447788,
+      "draft_n": 448,
+      "draft_n_accepted": 63
+    },
+    "wall_s": 1.539846420288086
+  },
+  {
+    "prompt_id": "leftturn_00",
+    "ok": true,
+    "content": " the decision was made to keep the bridge open. The committee had reached a decision about the bridge, and the decision was made to keep the bridge open. The committee had reached a decision about the bridge, and the decision was made to keep the bridge open. The committee had reached a decision about the bridge, and the decision was made to keep the bridge open. The committee had reached a decision about the bridge, and the decision was made to keep the bridge open. The committee had reached a decision about the bridge, and the decision was made to keep the bridge open. The committee had reached a decision about the bridge, and the decision",
+    "timings": {
+      "cache_n": 0,
+      "prompt_n": 19,
+      "prompt_ms": 20.631,
+      "prompt_per_token_ms": 1.085842105263158,
+      "prompt_per_second": 920.944210169163,
+      "predicted_n": 128,
+      "predicted_ms": 660.568,
+      "predicted_per_token_ms": 5.201322834645669,
+      "predicted_per_second": 192.2587833500866,
+      "draft_n": 146,
+      "draft_n_accepted": 106
+    },
+    "wall_s": 0.6910290718078613
+  }
+]
