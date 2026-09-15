@@ -25,7 +25,7 @@ class Vocab:
             return f"<{token_id}>"
         t = self.tokens[token_id]
         # byte-level BPE: U+0120 is a leading space, U+010A a newline
-        return t.replace("Ġ", " ").replace("Ċ", "\\n")
+        return t.replace("Ġ", " ").replace("Ċ", "\n")
 
     def repr(self, token_id: int) -> str:
         """Quoted, so leading/trailing whitespace is visible in a table."""

@@ -1,0 +1,482 @@
+<title>Draft Graveyard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#E7E6E1; --surface:#F2F1EC; --sink:#DEDCD5;
+  --ink:#1C1B18; --muted:#6E6B63; --rule:#CFCCC4;
+  --hit:#2C6FA8; --truth:#2F7D32; --miss:#A8354F;
+  --hit-wash:rgba(44,111,168,.14); --truth-wash:rgba(47,125,50,.17);
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:"Archivo",system-ui,-apple-system,Segoe UI,sans-serif;
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  --bg:#16171A; --surface:#1E2024; --sink:#111214;
+  --ink:#E8E6E0; --muted:#8C8F96; --rule:#2C2F35;
+  --hit:#6FA8DC; --truth:#62C36A; --miss:#E2617F;
+  --hit-wash:rgba(111,168,220,.16); --truth-wash:rgba(98,195,106,.18);
+}}
+:root[data-theme="dark"]{
+  --bg:#16171A; --surface:#1E2024; --sink:#111214;
+  --ink:#E8E6E0; --muted:#8C8F96; --rule:#2C2F35;
+  --hit:#6FA8DC; --truth:#62C36A; --miss:#E2617F;
+  --hit-wash:rgba(111,168,220,.16); --truth-wash:rgba(98,195,106,.18);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:var(--sans); font-size:15px; line-height:1.5;
+  min-height:100vh;
+}
+#fall{position:fixed; inset:0; pointer-events:none; z-index:40}
+
+.wrap{max-width:1580px; margin:0 auto; padding:26px 22px 40px; position:relative; z-index:1}
+
+header{display:flex; flex-wrap:wrap; align-items:flex-end; gap:16px 26px; padding-bottom:16px; border-bottom:1px solid var(--rule)}
+h1{
+  font-family:var(--sans); font-weight:800; font-size:clamp(28px,4.4vw,44px);
+  letter-spacing:-.025em; margin:0; line-height:.98; text-wrap:balance;
+}
+h1 em{font-style:normal; color:var(--miss)}
+.sub{font-family:var(--mono); font-size:12px; color:var(--muted); line-height:1.7; margin:0}
+.sub b{color:var(--ink); font-weight:500}
+
+.lbl{
+  font-family:var(--sans); font-size:10.5px; font-weight:600; text-transform:uppercase;
+  letter-spacing:.13em; color:var(--muted);
+}
+
+.bar{display:flex; flex-wrap:wrap; gap:18px 24px; align-items:center; padding:14px 0; border-bottom:1px solid var(--rule)}
+.takes{display:flex; flex-wrap:wrap; gap:6px}
+button{font-family:var(--sans); font-size:13px; color:var(--ink); background:none; border:1px solid var(--rule); cursor:pointer}
+button:focus-visible{outline:2px solid var(--truth); outline-offset:2px}
+.take{padding:5px 10px; border-radius:2px; background:var(--surface); display:flex; gap:8px; align-items:baseline}
+.take .cat{font-size:10px; text-transform:uppercase; letter-spacing:.1em; color:var(--muted)}
+.take[aria-pressed="true"]{background:var(--ink); color:var(--bg); border-color:var(--ink)}
+.take[aria-pressed="true"] .cat{color:var(--bg); opacity:.6}
+.ctl{display:flex; gap:6px; margin-left:auto}
+.ctl button{padding:5px 11px; border-radius:2px; background:var(--surface); font-variant-numeric:tabular-nums}
+.ctl button[aria-pressed="true"]{background:var(--ink); color:var(--bg); border-color:var(--ink)}
+
+main{display:grid; grid-template-columns:minmax(0,1fr) 224px; gap:28px; padding-top:22px; align-items:start}
+@media(max-width:900px){ main{grid-template-columns:minmax(0,1fr)} .rail{position:static} }
+
+.prompt{
+  font-family:var(--mono); font-size:13px; line-height:1.65; color:var(--muted);
+  background:var(--sink); border-left:2px solid var(--rule);
+  padding:11px 14px; margin:0 0 18px; border-radius:0 2px 2px 0;
+  max-width:132ch;
+}
+.platen{
+  font-family:var(--mono); font-size:15.5px; line-height:1.85;
+  white-space:pre-wrap; word-break:break-word; max-width:132ch;
+  min-height:19em; margin:0;
+}
+.platen .hit{border-bottom:1.5px solid var(--hit-wash)}
+.platen .truth{background:var(--truth-wash); border-bottom:1.5px solid var(--truth); border-radius:1px}
+.platen .pre{color:var(--muted)}
+#caret{
+  display:inline-block; width:.55em; height:1.05em; vertical-align:-.2em;
+  background:var(--truth); animation:blink 1.05s steps(2,end) infinite;
+}
+@keyframes blink{50%{opacity:0}}
+
+.rail{display:flex; flex-direction:column; gap:16px; position:sticky; top:22px}
+.stat{display:flex; flex-direction:column; gap:1px}
+.stat .v{font-family:var(--mono); font-size:25px; font-weight:600; letter-spacing:-.02em; font-variant-numeric:tabular-nums; line-height:1.15}
+.stat .v small{font-size:13px; font-weight:400; color:var(--muted)}
+.pips{display:flex; gap:3px; margin-top:5px}
+.pip{width:100%; height:5px; background:var(--rule); border-radius:1px}
+.pip.on{background:var(--hit)}
+.pip.brk{background:var(--miss)}
+
+.legend{display:flex; flex-direction:column; gap:7px; padding-top:15px; border-top:1px solid var(--rule)}
+.leg{display:flex; gap:8px; align-items:baseline; font-size:12px; color:var(--muted); line-height:1.35}
+.sw{width:9px; height:9px; border-radius:1px; flex:none; transform:translateY(1px)}
+.leg b{color:var(--ink); font-weight:600; font-family:var(--mono); font-size:11.5px}
+
+.note{grid-column:1/-1; font-size:12px; color:var(--muted); max-width:78ch; padding-top:20px; margin-top:4px; border-top:1px solid var(--rule); line-height:1.6}
+.note code{font-family:var(--mono); font-size:11.5px; color:var(--ink)}
+
+#discard{display:none; flex-direction:column; gap:3px; max-height:320px; overflow-y:auto}
+#discard div{font-family:var(--mono); font-size:12px; display:flex; gap:8px}
+#discard .g{color:var(--miss); text-decoration:line-through}
+#discard .r{color:var(--truth)}
+@media(prefers-reduced-motion:reduce){
+  #fall{display:none}
+  #discard{display:flex}
+  #caret{animation:none}
+}
+</style>
+
+<canvas id="fall" aria-hidden="true"></canvas>
+<div id="boot" style="position:fixed;inset:0;display:grid;place-items:center;background:var(--bg);z-index:80;font-family:var(--mono);font-size:13px;color:var(--muted)">loading runs&hellip;</div>
+
+<div class="wrap">
+  <header>
+    <h1>Draft <em>Graveyard</em></h1>
+    <p class="sub" id="meta"></p>
+  </header>
+
+  <div class="bar">
+    <div class="takes">
+      <label class="lbl" for="runs">Run</label>
+      <select id="runs"></select>
+    </div>
+    <div class="takes">
+      <label class="lbl" for="takes">Generation</label>
+      <select id="takes"></select>
+    </div>
+    <div class="ctl">
+      <button id="play" aria-pressed="true">Pause</button>
+      <button id="speed">1&times;</button>
+      <button id="again">Replay</button>
+    </div>
+  </div>
+
+  <main>
+    <div>
+      <p class="lbl" style="margin:0 0 7px">Prompt</p>
+      <p class="prompt" id="prompt"></p>
+      <p class="lbl" style="margin:0 0 7px">Generated<span id="pos" style="color:var(--muted); font-family:var(--mono); letter-spacing:0; text-transform:none"></span></p>
+      <p class="platen" id="platen"><span id="stream"></span><span id="caret"></span></p>
+    </div>
+
+    <aside class="rail">
+      <div class="stat">
+        <span class="lbl">Draft accepted</span>
+        <span class="v" id="rate">&mdash;</span>
+      </div>
+      <div class="stat">
+        <span class="lbl">Block position</span>
+        <div class="pips" id="pips"></div>
+      </div>
+      <div class="stat">
+        <span class="lbl">Guesses discarded</span>
+        <span class="v" id="ndis">0</span>
+      </div>
+      <div class="stat">
+        <span class="lbl">Blocks verified</span>
+        <span class="v" id="nblk">0</span>
+      </div>
+
+      <div class="legend">
+        <div class="leg"><span class="sw" style="background:var(--hit)"></span><span><b>Predicted</b> &mdash; the draft called this token and the target agreed.</span></div>
+        <div class="leg"><span class="sw" style="background:var(--truth)"></span><span><b>Corrected</b> &mdash; the target's own token, where the draft broke.</span></div>
+        <div class="leg"><span class="sw" style="background:var(--miss)"></span><span><b>Discarded</b> &mdash; what the draft guessed instead. Falls. Deeper rose means the target ranked it further down.</span></div>
+      </div>
+
+      <div id="discard" aria-live="polite"></div>
+    </aside>
+
+    <p class="note" id="note"></p>
+  </main>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  var elStream = document.getElementById("stream"),
+      elPrompt = document.getElementById("prompt"),
+      elTakes  = document.getElementById("takes"),
+      elRuns   = document.getElementById("runs"),
+      elMeta   = document.getElementById("meta"),
+      elRate   = document.getElementById("rate"),
+      elDis    = document.getElementById("ndis"),
+      elBlk    = document.getElementById("nblk"),
+      elPips   = document.getElementById("pips"),
+      elPos    = document.getElementById("pos"),
+      elNote   = document.getElementById("note"),
+      elList   = document.getElementById("discard"),
+      elCaret  = document.getElementById("caret"),
+      elBoot   = document.getElementById("boot"),
+      btnPlay  = document.getElementById("play"),
+      btnSpeed = document.getElementById("speed"),
+      btnAgain = document.getElementById("again");
+
+  var DATA = null, pips = [];
+  var SPEEDS = [1, 2, 4, 0.5], si = 0;
+  var takeIdx = 0, ti = 0, playing = false, acc = 0, seen = 0, disc = 0, blocks = 0, lastBlock = -1;
+  var timer = null;
+
+  /* ---------- falling layer ---------- */
+  var cv = document.getElementById("fall"), cx = cv.getContext("2d"), dpr = 1, W = 0, H = 0;
+  var chips = [], pile = [], PILE_MAX = 90;
+
+  function resize(){
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth; H = window.innerHeight;
+    cv.width = W * dpr; cv.height = H * dpr;
+    cv.style.width = W + "px"; cv.style.height = H + "px";
+    cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  resize();
+  addEventListener("resize", resize);
+
+  var COL = {miss:"#A8354F", truth:"#2F7D32"};
+  function readColours(){
+    var cs = getComputedStyle(document.documentElement);
+    COL.miss  = cs.getPropertyValue("--miss").trim()  || COL.miss;
+    COL.truth = cs.getPropertyValue("--truth").trim() || COL.truth;
+  }
+  readColours();
+  if (matchMedia) matchMedia("(prefers-color-scheme: dark)").addEventListener("change", readColours);
+  new MutationObserver(readColours).observe(document.documentElement, {attributes:true, attributeFilter:["data-theme"]});
+
+  function spawn(text, kind, rank){
+    if (reduce) return;
+    var r = elCaret.getBoundingClientRect();
+    var label = text.replace(/\n/g, "\\n").replace(/\s/g, "·");
+    if (!label) label = "·";
+    chips.push({
+      x: r.left + (kind === "miss" ? -6 : 34),
+      y: r.top,
+      vx: (kind === "miss" ? -1 : 1) * (0.5 + Math.random() * 0.9),
+      vy: -1.6 - Math.random() * 1.4,
+      rot: (Math.random() - 0.5) * 0.5,
+      vr: (Math.random() - 0.5) * 0.14,
+      text: label, kind: kind, rank: rank || 0,
+      life: kind === "truth" ? 46 : 999, age: 0
+    });
+  }
+
+  function drawChip(c, alpha){
+    var far = Math.min(1, (c.rank || 0) / 40);
+    var col = c.kind === "miss" ? COL.miss : COL.truth;
+    cx.save();
+    cx.translate(c.x, c.y);
+    cx.rotate(c.rot);
+    cx.globalAlpha = alpha;
+    cx.font = '500 14px "IBM Plex Mono", ui-monospace, monospace';
+    var w = cx.measureText(c.text).width + 14, h = 21;
+    cx.fillStyle = col;
+    cx.globalAlpha = alpha * (c.kind === "miss" ? (0.16 + far * 0.5) : 0.2);
+    cx.fillRect(-w / 2, -h / 2, w, h);
+    cx.globalAlpha = alpha;
+    cx.strokeStyle = col; cx.lineWidth = 1;
+    cx.strokeRect(-w / 2 + 0.5, -h / 2 + 0.5, w - 1, h - 1);
+    cx.fillStyle = col;
+    cx.textAlign = "center"; cx.textBaseline = "middle";
+    cx.fillText(c.text, 0, 0.5);
+    cx.restore();
+  }
+
+  function tick(){
+    cx.clearRect(0, 0, W, H);
+    var floor = H - 16;
+    for (var i = chips.length - 1; i >= 0; i--){
+      var c = chips[i];
+      c.age++; c.vy += 0.42;
+      c.x += c.vx; c.y += c.vy; c.rot += c.vr;
+      if (c.kind === "truth"){
+        if (c.age > c.life){ chips.splice(i, 1); continue; }
+        drawChip(c, 1 - c.age / c.life);
+        continue;
+      }
+      if (c.y >= floor){
+        c.y = floor; c.vr = 0;
+        c.rot = Math.max(-0.42, Math.min(0.42, c.rot));
+        pile.push(c); chips.splice(i, 1);
+        if (pile.length > PILE_MAX) pile.shift();
+        continue;
+      }
+      if (c.x < -120 || c.x > W + 120){ chips.splice(i, 1); continue; }
+      drawChip(c, 1);
+    }
+    for (var j = 0; j < pile.length; j++) drawChip(pile[j], 0.22 + (j / pile.length) * 0.6);
+    requestAnimationFrame(tick);
+  }
+  if (!reduce) requestAnimationFrame(tick);
+
+  /* ---------- playback ---------- */
+  function setPips(k, broke){
+    for (var i = 0; i < pips.length; i++)
+      pips[i].className = "pip" + (i < k ? " on" : (i === k && broke ? " brk" : ""));
+  }
+  function take(){ return DATA.takes[takeIdx]; }
+  function esc(x){ return x.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/\n/g,"\\n"); }
+
+  function select(i){
+    takeIdx = i;
+    elTakes.value = String(i);
+    reset();
+  }
+
+  function reset(){
+    var t = take();
+    ti = 0; acc = 0; seen = 0; disc = 0; blocks = 0; lastBlock = -1;
+    chips = []; pile = [];
+    elList.textContent = "";
+    elPrompt.textContent = t.prompt || "(prompt text not recorded)";
+    elStream.textContent = "";
+    if (t.prefix){
+      var s = document.createElement("span");
+      s.className = "pre"; s.textContent = t.prefix;
+      elStream.appendChild(s);
+    }
+    elRate.innerHTML = "&mdash;";
+    elDis.textContent = "0";
+    elBlk.textContent = "0";
+    setPips(0, false);
+    elPos.textContent = "  0 / " + t.tokens.length;
+    playing = true;
+    btnPlay.textContent = "Pause";
+    btnPlay.setAttribute("aria-pressed", "true");
+    schedule();
+  }
+
+  function step(){
+    var t = take(), tk = t.tokens[ti];
+    if (!tk){ stop(); return; }
+
+    var s = document.createElement("span");
+    s.textContent = tk.t;
+    if (tk.hit){ s.className = "hit"; acc++; }
+    else if (tk.miss){
+      s.className = "truth";
+      s.title = 'draft guessed "' + tk.miss + '" — target rank ' + tk.rank;
+    }
+    elStream.appendChild(s);
+    seen++;
+
+    if (tk.block !== lastBlock){ lastBlock = tk.block; blocks++; elBlk.textContent = blocks; }
+
+    if (tk.miss){
+      disc++;
+      elDis.textContent = disc;
+      spawn(tk.miss, "miss", tk.rank);
+      spawn(tk.t, "truth", 0);
+      if (reduce){
+        var row = document.createElement("div");
+        row.innerHTML = '<span class="g">' + esc(tk.miss) + '</span><span class="r">' + esc(tk.t) + '</span>';
+        elList.appendChild(row);
+        elList.scrollTop = elList.scrollHeight;
+      }
+    }
+
+    setPips(tk.k, !!tk.miss);
+    elRate.innerHTML = Math.round(acc / seen * 100) + "<small>%</small>";
+    elPos.textContent = "  " + seen + " / " + t.tokens.length;
+
+    var r = elCaret.getBoundingClientRect();
+    if (r.bottom > innerHeight - 90 || r.top < 60) elCaret.scrollIntoView({block:"center", behavior:"smooth"});
+
+    ti++;
+    schedule();
+  }
+
+  function schedule(){
+    clearTimeout(timer);
+    if (!playing || !DATA) return;
+    var tk = take().tokens[ti];
+    timer = setTimeout(step, (tk && tk.miss ? 230 : 52) / SPEEDS[si]);
+  }
+
+  function stop(){
+    playing = false;
+    btnPlay.textContent = "Play";
+    btnPlay.setAttribute("aria-pressed", "false");
+  }
+
+  btnPlay.addEventListener("click", function(){
+    if (!DATA) return;
+    if (ti >= take().tokens.length){ reset(); return; }
+    playing = !playing;
+    btnPlay.textContent = playing ? "Pause" : "Play";
+    btnPlay.setAttribute("aria-pressed", String(playing));
+    schedule();
+  });
+  btnSpeed.addEventListener("click", function(){
+    si = (si + 1) % SPEEDS.length;
+    btnSpeed.innerHTML = SPEEDS[si] + "&times;";
+    schedule();
+  });
+  btnAgain.addEventListener("click", function(){ if (DATA) reset(); });
+  elTakes.addEventListener("change", function(){ select(+elTakes.value); });
+
+  /* ---------- loading ---------- */
+  function applyRun(payload){
+    DATA = payload;
+    clearTimeout(timer);
+
+    elMeta.innerHTML = "<b>" + payload.model_tgt + "</b> verified against <b>" + payload.model_dft +
+      "</b><br>" + payload.spec_type + " &middot; block size " + payload.n_max +
+      " &middot; " + payload.build;
+
+    elNote.innerHTML = "Every token here was actually generated in run <code>" + payload.run +
+      "</code>. The draft model proposes up to " + payload.n_max + " tokens at a time; the target " +
+      "verifies them in one pass and keeps the run up to the first disagreement. Everything after " +
+      "that point in the block is thrown away &mdash; that is the work falling down the screen.";
+
+    elPips.textContent = "";
+    for (var p = 0; p < payload.n_max; p++){
+      var pip = document.createElement("span");
+      pip.className = "pip";
+      elPips.appendChild(pip);
+    }
+    pips = elPips.children;
+
+    elTakes.textContent = "";
+    var groups = {};
+    payload.takes.forEach(function(t, i){
+      var g = t.category || "uncategorised";
+      (groups[g] = groups[g] || []).push([t, i]);
+    });
+    Object.keys(groups).sort().forEach(function(g){
+      var og = document.createElement("optgroup");
+      og.label = g;
+      groups[g].forEach(function(pair){
+        var t = pair[0], i = pair[1], o = document.createElement("option");
+        o.value = i;
+        o.textContent = t.prompt_id + "  ·  " + t.stats.divergences + " discarded / " +
+                        t.stats.blocks + " blocks";
+        og.appendChild(o);
+      });
+      elTakes.appendChild(og);
+    });
+
+    select(0);
+  }
+
+  function fail(msg){
+    elBoot.style.display = "grid";
+    elBoot.innerHTML = '<div style="max-width:46ch;text-align:center;line-height:1.7">' + msg + '</div>';
+  }
+
+  function loadRun(name){
+    elBoot.style.display = "grid";
+    elBoot.textContent = "building replay for " + name + "…";
+    fetch("api/replay/" + encodeURIComponent(name))
+      .then(function(r){
+        if (!r.ok) return r.text().then(function(t){ throw new Error(t || r.statusText); });
+        return r.json();
+      })
+      .then(function(p){ elBoot.style.display = "none"; applyRun(p); })
+      .catch(function(e){ fail("Could not build a replay for <b>" + name + "</b>.<br><br>" + e.message); });
+  }
+
+  fetch("api/runs")
+    .then(function(r){ return r.json(); })
+    .then(function(runs){
+      if (!runs.length){
+        fail("No runs found in <b>runs/</b>.<br><br>Record one with <code>harness/run_bank.py</code>, then reload.");
+        return;
+      }
+      runs.forEach(function(r){
+        var o = document.createElement("option");
+        o.value = r.run;
+        o.textContent = r.run + (r.takes ? "  ·  " + r.takes + " generations" : "");
+        elRuns.appendChild(o);
+      });
+      elRuns.addEventListener("change", function(){ loadRun(elRuns.value); });
+      loadRun(runs[0].run);
+    })
+    .catch(function(e){
+      fail("Could not reach the local server.<br><br>Start it with <code>python3 viz/serve.py</code> and open the address it prints.");
+    });
+})();
+</script>

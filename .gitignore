@@ -4,3 +4,7 @@ __pycache__/
 *.log
 dist/
 build/
+
+# analysis environment and recorded runs
+.venv/
+runs/*/replay.json

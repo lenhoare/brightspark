@@ -16,7 +16,11 @@ anticipation/       analysis library (stdlib only, except plots)
   vocab.py          offline token id -> text, read from the target GGUF
   plots.py          figures
   report.py         `python3 -m anticipation.report <run-dir>`
+  export_replay.py  builds the visualiser payload from a trace
 harness/run_bank.py launches a traced server and drives a prompt bank
+harness/validate_bank.py  checks a generated prompt bank
+viz/serve.py        local web app (Draft Graveyard)
+viz/app.html        its single page
 prompts/            prompt banks (bank.example.jsonl is a shape example only)
 runs/               one self-describing directory per run
 ```
@@ -53,6 +57,26 @@ python3 -m venv .venv
 A run directory holds `trace.jsonl`, `server.log`, `bank.jsonl`,
 `manifest.jsonl`, `responses.json` and `run.json`, so a run is reproducible
 from itself alone.
+
+## Watching a run
+
+```
+.venv/bin/python viz/serve.py --open      # http://127.0.0.1:8081
+```
+
+**Draft Graveyard** replays a recorded run token by token. Tokens the draft
+predicted correctly are underlined in blue; where the draft broke, the target's
+real token is filled green and the draft's rejected guess falls down the screen
+and piles up at the bottom — that pile is the discarded compute. Falling chips
+deepen in rose with how far down the target ranked the guess, so a pale chip is
+a near-miss and a saturated one is a genuinely different continuation.
+
+Every run under `runs/` appears in the run dropdown; replays are built on first
+request (a few seconds, mostly reading the tokenizer out of the GGUF) and
+cached as `replay.json` next to the trace, rebuilt whenever the trace is newer.
+Nothing needs regenerating by hand after a new run — just reload.
+
+The server binds to localhost only and serves nothing outside `runs/`.
 
 ## Reading a trace
 
