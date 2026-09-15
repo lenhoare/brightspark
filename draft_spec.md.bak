@@ -1,0 +1,113 @@
+# Anticipation — DSpark Divergence Instrumentation Spec
+
+## Goal
+
+Instrument DSpark speculative decoding to expose, per draft block, how the
+draft model's confidence evolves and where it diverges from the target
+model's actual output — as a first empirical step toward treating that
+divergence signal as a computational proxy for certainty / surprise /
+novelty / boredom. No affect model gets built until Phase 3 produces
+evidence the signal is real and not just quantisation/precision noise.
+
+## Models
+
+- **Target:** `openbmb/MiniCPM5-2B` (GGUF, Q8_0 or F16 — small enough to run
+  near-full-precision on the 3060, sidestepping the draft/target hidden-state
+  precision mismatch that hurts DFlash on quantised targets)
+- **Draft:** `openbmb/MiniCPM5-2B-DSpark` (~324M params, 5 layers, block
+  size 7, conditions on target hidden layers `[1, 10, 20, 30, 39]`)
+- **Runtime:** llama.cpp master, `--spec-type draft-dspark` (already merged,
+  documented in `docs/speculative.md` — no fork needed to get baseline
+  running)
+
+## Phase 0 — Baseline run
+
+Confirm the stock path works before touching anything:
+
+```
+llama-server \
+  -m MiniCPM5-2B-Q8_0.gguf \
+  -md MiniCPM5-2B-DSpark.gguf \
+  --spec-type draft-dspark \
+  --spec-draft-n-max 7 \
+  -ngl 99 -ngld 99 -fa on \
+  -c 8192 --jinja --port 8080
+```
+
+Note the aggregate acceptance rate llama.cpp reports at the end of a run —
+this becomes the sanity check for Phase 1's per-block logging (averaged
+logged acceptance should reproduce this number).
+
+## Phase 1 — Instrumentation
+
+- Locate the verify loop that drives `draft-dspark` in the llama.cpp
+  source (search for `n_accept` / `n_drafted` / the generic speculative
+  accept-reject logic — likely shared code path used by all `--spec-type`
+  variants, so this instrumentation is reusable for DFlash/EAGLE3 later).
+- Add a flag-gated trace (e.g. `--dspark-trace <path>.jsonl`) so normal
+  runs are untouched. One JSON line per block:
+
+```json
+{
+  "block_idx": 42,
+  "prompt_id": "surprise_01",
+  "draft_tokens": [1923, 44, 812, 91, 5, 3301, 78],
+  "draft_top1_probs": [0.97, 0.94, 0.88, 0.51, 0.22, 0.83, 0.79],
+  "accepted_len": 3,
+  "mismatch_pos": 3,
+  "draft_token_at_mismatch": 91,
+  "target_token_at_mismatch": 604
+}
+```
+
+- Confirm whether the DSpark head exposes full softmax by default or just
+  argmax — top-1 probability (or entropy) per position needs to come from
+  somewhere; may require a small addition if it's not already surfaced.
+
+## Phase 2 — Test prompt bank
+
+Fixed set, reused across every run for comparability:
+
+- **Boring** — repetitive boilerplate (e.g. a templated log format repeated)
+- **Twist** — a joke or narrative with a punchline/reversal
+- **Technical** — dense, jargon-heavy factual text
+- **Left-turn** — deliberately creative, unpredictable continuation
+
+## Phase 3 — Analysis & "fun" outputs
+
+### A. Divergence/convergence graph
+
+Small standalone Python script (matplotlib) reading the JSONL log:
+
+- X-axis: block index (time through generation)
+- Two lines/subplots: `accepted_len` (0–7, convergence proxy) and mean
+  `draft_top1_prob` across the block (certainty proxy)
+- Mark/shade blocks where `accepted_len < 7` as divergence events
+- Overlay by `prompt_id` category to compare shape across Boring / Twist /
+  Technical / Left-turn — this comparison *is* the evidence gate
+
+### B. Mismatch bucket
+
+- Running `Counter` of `(draft_token_at_mismatch, target_token_at_mismatch)`
+  pairs across all logged divergences
+- Print top-N most common mismatch pairs at end of run — a cheap, free
+  window into the small draft model's specific blind spots
+- Optionally keep a handful of tokens of preceding context around each
+  mismatch for qualitative spot-checking ("what was it expecting here")
+
+## Success criteria (gate before Phase 4)
+
+- Instrumentation doesn't break baseline decoding; logged average
+  `accepted_len` matches llama.cpp's own reported acceptance rate
+- The divergence graph visibly differs in shape between prompt categories
+  (e.g. Boring stays flat/high, Left-turn shows visible dips) — if it
+  doesn't, the signal isn't there yet and Phase 4 shouldn't start
+
+## Open questions
+
+- Exact source location of the `draft-dspark` accept/reject loop
+- Whether within-block confidence trajectory (position-to-position, given
+  DSpark's chained low-rank bias) is a richer signal than the simple
+  accepted-length break point — worth logging both and comparing
+- How divergence/mismatch-rate ultimately maps onto certainty / surprise /
+  novelty / boredom — deliberately deferred until Phase 3 data exists
