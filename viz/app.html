@@ -63,12 +63,20 @@ button:focus-visible{outline:2px solid var(--truth); outline-offset:2px}
 main{display:grid; grid-template-columns:minmax(0,1fr) 224px; gap:28px; padding-top:22px; align-items:start}
 @media(max-width:900px){ main{grid-template-columns:minmax(0,1fr)} .rail{position:static} }
 
+.turns{display:flex; flex-direction:column; gap:5px; margin:0 0 18px; max-width:132ch}
 .prompt{
   font-family:var(--mono); font-size:13px; line-height:1.65; color:var(--muted);
   background:var(--sink); border-left:2px solid var(--rule);
-  padding:11px 14px; margin:0 0 18px; border-radius:0 2px 2px 0;
-  max-width:132ch;
+  padding:10px 14px; margin:0; border-radius:0 2px 2px 0;
+  display:flex; gap:12px; align-items:baseline;
 }
+.prompt .who{
+  font-family:var(--sans); font-size:9.5px; font-weight:600; text-transform:uppercase;
+  letter-spacing:.12em; color:var(--muted); opacity:.75; flex:none;
+  width:4.2rem; padding-top:1px;
+}
+.prompt.sys{opacity:.72; font-size:12.5px}
+#prompt{border-left-color:var(--truth); color:var(--ink)}
 .platen{
   font-family:var(--mono); font-size:15.5px; line-height:1.85;
   white-space:pre-wrap; word-break:break-word; max-width:132ch;
@@ -138,8 +146,11 @@ main{display:grid; grid-template-columns:minmax(0,1fr) 224px; gap:28px; padding-
 
   <main>
     <div>
-      <p class="lbl" style="margin:0 0 7px">Prompt</p>
-      <p class="prompt" id="prompt"></p>
+      <p class="lbl" style="margin:0 0 7px">Sent to the model</p>
+      <div class="turns">
+        <p class="prompt sys" id="system"><span class="who">system</span><span id="systext"></span></p>
+        <p class="prompt" id="prompt"><span class="who">user</span><span id="usertext"></span></p>
+      </div>
       <p class="lbl" style="margin:0 0 7px">Generated<span id="pos" style="color:var(--muted); font-family:var(--mono); letter-spacing:0; text-transform:none"></span></p>
       <p class="platen" id="platen"><span id="stream"></span><span id="caret"></span></p>
     </div>
@@ -311,7 +322,15 @@ main{display:grid; grid-template-columns:minmax(0,1fr) 224px; gap:28px; padding-
     ti = 0; acc = 0; seen = 0; disc = 0; blocks = 0; lastBlock = -1;
     chips = []; pile = [];
     elList.textContent = "";
-    elPrompt.textContent = t.prompt || "(prompt text not recorded)";
+    var sys = document.getElementById("system"), syst = document.getElementById("systext");
+    if (DATA.system){
+      syst.textContent = DATA.system;
+      sys.hidden = false;
+    } else {
+      sys.hidden = true;
+    }
+    document.getElementById("usertext").textContent =
+      t.prompt || "(this run's manifest has no prompt text)";
     elStream.textContent = "";
     if (t.prefix){
       var s = document.createElement("span");
@@ -322,7 +341,8 @@ main{display:grid; grid-template-columns:minmax(0,1fr) 224px; gap:28px; padding-
     elDis.textContent = "0";
     elBlk.textContent = "0";
     setPips(0, false);
-    elPos.textContent = "  0 / " + t.tokens.length;
+    elPos.textContent = "  0 / " + t.tokens.length +
+      (t.finish_reason ? "   ended: " + (t.finish_reason === "stop" ? "model stopped" : t.finish_reason) : "");
     playing = true;
     btnPlay.textContent = "Pause";
     btnPlay.setAttribute("aria-pressed", "true");
@@ -360,7 +380,8 @@ main{display:grid; grid-template-columns:minmax(0,1fr) 224px; gap:28px; padding-
 
     setPips(tk.k, !!tk.miss);
     elRate.innerHTML = Math.round(acc / seen * 100) + "<small>%</small>";
-    elPos.textContent = "  " + seen + " / " + t.tokens.length;
+    elPos.textContent = "  " + seen + " / " + t.tokens.length +
+      (t.finish_reason ? "   ended: " + (t.finish_reason === "stop" ? "model stopped" : t.finish_reason) : "");
 
     var r = elCaret.getBoundingClientRect();
     if (r.bottom > innerHeight - 90 || r.top < 60) elCaret.scrollIntoView({block:"center", behavior:"smooth"});
@@ -405,6 +426,7 @@ main{display:grid; grid-template-columns:minmax(0,1fr) 224px; gap:28px; padding-
 
     elMeta.innerHTML = "<b>" + payload.model_tgt + "</b> verified against <b>" + payload.model_dft +
       "</b><br>" + payload.spec_type + " &middot; block size " + payload.n_max +
+      " &middot; thinking " + (payload.thinking ? "on" : "off") +
       " &middot; " + payload.build;
 
     elNote.innerHTML = "Every token here was actually generated in run <code>" + payload.run +
@@ -442,28 +464,47 @@ main{display:grid; grid-template-columns:minmax(0,1fr) 224px; gap:28px; padding-
     select(0);
   }
 
-  function fail(msg){
-    elBoot.style.display = "grid";
-    elBoot.innerHTML = '<div style="max-width:46ch;text-align:center;line-height:1.7">' + msg + '</div>';
+  // a hard failure (no server, no runs) takes the full overlay; a single run
+  // failing must not cover the run picker, or there is no way to reach a
+  // working run.
+  function fail(msg, fatal){
+    if (fatal || !elRuns.options.length){
+      elBoot.style.display = "grid";
+      elBoot.innerHTML = '<div style="max-width:50ch;text-align:center;line-height:1.7">' + msg + '</div>';
+      return;
+    }
+    elBoot.style.display = "none";
+    clearTimeout(timer);
+    playing = false;
+    btnPlay.textContent = "Play";
+    btnPlay.setAttribute("aria-pressed", "false");
+    elPrompt.textContent = "";
+    elStream.textContent = "";
+    var box = document.createElement("span");
+    box.style.color = "var(--miss)";
+    box.style.display = "block";
+    box.style.lineHeight = "1.8";
+    box.innerHTML = msg + "<br><br>Pick another run from the dropdown above.";
+    elStream.appendChild(box);
   }
 
   function loadRun(name){
     elBoot.style.display = "grid";
-    elBoot.textContent = "building replay for " + name + "…";
+    elBoot.textContent = "loading " + name + "… (first open of a large run takes a few seconds)";
     fetch("api/replay/" + encodeURIComponent(name))
       .then(function(r){
         if (!r.ok) return r.text().then(function(t){ throw new Error(t || r.statusText); });
         return r.json();
       })
       .then(function(p){ elBoot.style.display = "none"; applyRun(p); })
-      .catch(function(e){ fail("Could not build a replay for <b>" + name + "</b>.<br><br>" + e.message); });
+      .catch(function(e){ fail("Could not build a replay for <b>" + name + "</b>.<br><br>" + e.message, false); });
   }
 
   fetch("api/runs")
     .then(function(r){ return r.json(); })
     .then(function(runs){
       if (!runs.length){
-        fail("No runs found in <b>runs/</b>.<br><br>Record one with <code>harness/run_bank.py</code>, then reload.");
+        fail("No runs found in <b>runs/</b>.<br><br>Record one with <code>harness/run_bank.py</code>, then reload.", true);
         return;
       }
       runs.forEach(function(r){
@@ -476,7 +517,7 @@ main{display:grid; grid-template-columns:minmax(0,1fr) 224px; gap:28px; padding-
       loadRun(runs[0].run);
     })
     .catch(function(e){
-      fail("Could not reach the local server.<br><br>Start it with <code>python3 viz/serve.py</code> and open the address it prints.");
+      fail("Could not reach the local server.<br><br>Start it with <code>.venv/bin/python viz/serve.py</code> and open the address it prints.", true);
     });
 })();
 </script>

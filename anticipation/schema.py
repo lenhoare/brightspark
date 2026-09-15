@@ -121,7 +121,9 @@ def load(path: str | Path, drop_replays: bool = True) -> tuple[Header, list[Bloc
     header = Header()
     blocks: list[Block] = []
 
-    with open(path, "r", encoding="utf-8") as f:
+    # a token can be a partial multi-byte character, so context_tail may begin
+    # mid-sequence and carry invalid UTF-8; substitute rather than refuse the file
+    with open(path, "r", encoding="utf-8", errors="replace") as f:
         for lineno, line in enumerate(f, 1):
             line = line.strip()
             if not line:

@@ -34,6 +34,15 @@ def build(run_dir: Path, vocab_path: str | None = None) -> dict:
     rpath = run_dir / "responses.json"
     responses = json.loads(rpath.read_text()) if rpath.exists() else []
 
+    # what the model was actually sent, which is not always what the bank says
+    cfg = {}
+    cpath = run_dir / "run.json"
+    if cpath.exists():
+        try:
+            cfg = json.loads(cpath.read_text()).get("args") or {}
+        except Exception:
+            cfg = {}
+
     by_task: dict[int, list] = {}
     for b in blocks:
         by_task.setdefault(b.task_id, []).append(b)
@@ -93,6 +102,7 @@ def build(run_dir: Path, vocab_path: str | None = None) -> dict:
             "category": meta.get("category"),
             "subject": meta.get("subject"),
             "prompt": meta.get("prompt", ""),
+            "finish_reason": resp.get("finish_reason"),
             "prefix": prefix,
             "tokens": tokens,
             "stats": {
@@ -111,6 +121,8 @@ def build(run_dir: Path, vocab_path: str | None = None) -> dict:
         "spec_type": header.spec_type,
         "n_max": header.n_max,
         "build": header.build_info,
+        "system": cfg.get("system", ""),
+        "thinking": bool(cfg.get("thinking")),
         "takes": takes,
     }
 

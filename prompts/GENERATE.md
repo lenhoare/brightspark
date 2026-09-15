@@ -64,20 +64,19 @@ matters most:
    contract formatting, a `cooking` prompt must not invite a numbered recipe,
    a `poetry` prompt must not invite line breaks. Ask for *prose about* the
    subject.
-2. **No numerals, and no invitation to produce them.** No dates, quantities,
-   prices, measurements, statistics, years, counts, or version numbers.
-   Digits swamp the mismatch counts and would masquerade as a subject effect.
-   This is the single most common way to ruin this set.
-3. **No proper nouns where avoidable**, and never ask for a named person,
-   company, place, or product. Write "a coastal town", not a real one.
-4. **No lists, headings, bullets, code, tables, or markup of any kind**, and
+2. **Don't go out of your way to include numbers or names, but don't work to
+   avoid them either.** Write the prompt the way you naturally would. Numerals
+   and proper nouns are tagged and controlled for during analysis, so policing
+   them here is wasted effort. The one thing to avoid is a prompt whose *whole
+   point* is quantities — "give the figures for each year" belongs in Set B.
+3. **No lists, headings, bullets, code, tables, or markup of any kind**, and
    nothing that would tempt the model to produce them.
-5. **Length: 15–30 words per prompt**, and keep the spread tight across
+4. **Length: 15–30 words per prompt**, and keep the spread tight across
    subjects. A subject whose prompts are systematically longer is a confound.
-6. **Open enough to sustain ~256 tokens** of continuation without the model
+5. **Open enough to sustain ~256 tokens** of continuation without the model
    running out and stopping early. Avoid yes/no questions and anything
    answerable in a sentence.
-7. **Vary within a subject.** The eight prompts for `medicine` should not be
+6. **Vary within a subject.** The eight prompts for `medicine` should not be
    eight rephrasings of one question — spread them across different corners of
    the subject, while keeping register and length matched.
 
@@ -88,10 +87,10 @@ Good Set A prompt:
 Bad Set A prompts, and why:
 
 > List the top 5 causes of fever in adults over 65.
-> — numerals, a list, and it will stop early
+> — a list, and it will stop early. The numbers are fine; the list is not.
 
-> Describe how Pfizer developed its vaccine in 2020.
-> — proper nouns and a date
+> Give the annual rainfall figures for each of the last ten years.
+> — quantities are the entire point of this one, so it belongs in Set B
 
 > Write a poem about rain.
 > — `poetry` as a subject still takes prose: ask *about* poetry, e.g.
@@ -167,11 +166,11 @@ Check every one of these:
 
 - [ ] Every line is valid JSON on a single line, with all required fields
 - [ ] Every `prompt_id` is unique
-- [ ] Set A contains no digits at all — search for them
 - [ ] Set A has exactly 8 prompts for each of the 15 subjects
 - [ ] Set C pairs share an identical setup and are length-matched within 3 words
 - [ ] Every `pair_id` in Set C appears exactly twice, once per arm
 - [ ] No prompt asks for a list, table, code, or heading outside Set B
+- [ ] No Set A prompt exists mainly to produce quantities
 - [ ] Nothing is wrapped in markdown fences
 
 Then validate mechanically:

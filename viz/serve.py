@@ -64,12 +64,21 @@ def replay_for(name: str) -> bytes:
     if not trace.exists():
         raise FileNotFoundError(f"{name} has no trace.jsonl")
 
+    # the payload is built from the trace AND the manifest/responses, which the
+    # harness writes only after the server stops. Invalidating on the trace alone
+    # would permanently cache a prompt-less replay built while a run was still
+    # in flight.
+    def newest_input() -> float:
+        return max((run / f).stat().st_mtime
+                   for f in ("trace.jsonl", "manifest.jsonl", "responses.json", "run.json")
+                   if (run / f).exists())
+
     cache = run / "replay.json"
-    if cache.exists() and cache.stat().st_mtime >= trace.stat().st_mtime:
+    if cache.exists() and cache.stat().st_mtime >= newest_input():
         return cache.read_bytes()
 
     with _build_lock:
-        if cache.exists() and cache.stat().st_mtime >= trace.stat().st_mtime:
+        if cache.exists() and cache.stat().st_mtime >= newest_input():
             return cache.read_bytes()
         payload = export_replay.build(run)
         data = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode()

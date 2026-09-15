@@ -35,6 +35,8 @@ MARKUP = re.compile(r"^\s*(```|#{1,6}\s|[-*]\s|\d+\.\s|\|)")
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("bank")
+    ap.add_argument("--strict-digits", action="store_true",
+                    help="treat digits in Set A as an error rather than a warning")
     ap.add_argument("--strict-counts", action="store_true",
                     help="require the exact Set A/B/C totals from GENERATE.md")
     args = ap.parse_args()
@@ -118,9 +120,10 @@ def main() -> int:
             else:
                 subject_counts[subj] += 1
             if DIGIT.search(prompt):
-                errs.append(f"line {n} ({pid}): Set A prompt contains a digit -- "
-                            f"numerals dominate mismatch counts and would look "
-                            f"like a subject effect")
+                (errs if args.strict_digits else warns).append(
+                    f"line {n} ({pid}): Set A prompt contains a digit "
+                    f"(tagged and controlled for at analysis time; "
+                    f"--strict-digits makes this an error)")
             if d.get("tags"):
                 errs.append(f"line {n} ({pid}): Set A prompts must have empty tags")
             if not (15 <= words <= 30):
@@ -142,7 +145,7 @@ def main() -> int:
             if "pair_id" in d:
                 pairs[d["pair_id"]].append(d)
             if DIGIT.search(prompt):
-                errs.append(f"line {n} ({pid}): Set C prompt contains a digit")
+                warns.append(f"line {n} ({pid}): Set C prompt contains a digit")
 
     for pid, c in ids.items():
         if c > 1:

@@ -14,6 +14,7 @@ anticipation/       analysis library (stdlib only, except plots)
   reconcile.py      Phase 0 gate: trace vs llama.cpp's own acceptance report
   analysis.py       hazard, entropy control, blind-spot map
   vocab.py          offline token id -> text, read from the target GGUF
+  tokens.py         token kind classification (numeric / punct / word / ...)
   plots.py          figures
   report.py         `python3 -m anticipation.report <run-dir>`
   export_replay.py  builds the visualiser payload from a trace
@@ -105,7 +106,21 @@ records what was generated.
    trustworthy.
 2. **Consistency checks** — array lengths, mismatch positions, and a hard error
    if `p_min > 0` truncated any draft in the run being analysed.
-3. **Entropy control** — `accepted_len` regressed on target entropy. A high R²
+3. **Token kind** — numerals, punctuation and special tokens drive divergence
+   regardless of subject, so they are tagged rather than banned at authoring
+   time. `--kinds word,capitalised` reads the blind-spot map with them out.
+   The subject table reports both a raw delta and one adjusted for target
+   entropy and digit density; where the two disagree, the raw gap was the
+   covariates talking.
+4. **Twist pairs** — the pre-registered paired test, at the cue and over the
+   whole generation, printed with a manipulation check on target entropy so a
+   null can be told apart from a pair that never created the contrast.
+5. **Subject clustering at the prompt level.** Blocks are nested inside
+   prompts, so block-level z values treat correlated observations as
+   independent and overstate significance badly. The prompt-level table is the
+   one to trust, and the between/within variance ratio says how much subject
+   matters next to which prompt happened to be written.
+6. **Entropy control** — `accepted_len` regressed on target entropy. A high R²
    means divergence is just restating how uncertain the target already was, and
    the surprise-proxy line stops there. The residual is the part that is about
    the draft rather than the text.

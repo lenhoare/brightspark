@@ -50,23 +50,47 @@ def wait_for_health(port: int, proc: subprocess.Popen, timeout: float = 600.0) -
     raise TimeoutError(f"server did not become healthy within {timeout}s")
 
 
-def complete(port: int, prompt: str, n_predict: int, timeout: float) -> dict:
-    body = json.dumps({
-        "prompt": prompt,
-        "n_predict": n_predict,
+def complete(port: int, prompt: str, args, timeout: float) -> dict:
+    """Send one turn through the chat endpoint so the model's own template applies.
+
+    This matters more than it looks: posting a bare string to /completion
+    bypasses the chat template entirely, and an instruct model given a bare
+    sentence continues the document instead of answering it. --jinja on the
+    server only affects the chat endpoints.
+    """
+    payload = {
+        "messages": (
+            ([{"role": "system", "content": args.system}] if args.system else [])
+            + [{"role": "user", "content": prompt}]
+        ),
         "temperature": 0.0,
         "top_k": 1,
         "cache_prompt": False,
         "stream": False,
-    }).encode()
+        # the template writes an empty <think></think> pair when this is false,
+        # keeping the answer in one register instead of mixing reasoning and prose
+        "chat_template_kwargs": {"enable_thinking": bool(args.thinking)},
+    }
+    if args.n_predict:
+        payload["max_tokens"] = args.n_predict
 
     req = urllib.request.Request(
-        f"http://127.0.0.1:{port}/completion",
-        data=body,
+        f"http://127.0.0.1:{port}/v1/chat/completions",
+        data=json.dumps(payload).encode(),
         headers={"Content-Type": "application/json"},
     )
     with urllib.request.urlopen(req, timeout=timeout) as r:
-        return json.loads(r.read())
+        d = json.loads(r.read())
+
+    choice = (d.get("choices") or [{}])[0]
+    usage = d.get("usage") or {}
+
+    return {
+        "content": (choice.get("message") or {}).get("content", ""),
+        "finish_reason": choice.get("finish_reason"),
+        "n_tokens": usage.get("completion_tokens"),
+        "timings": d.get("timings") or {},
+    }
 
 
 def main() -> int:
@@ -81,7 +105,14 @@ def main() -> int:
     ap.add_argument("--out", required=True, help="run directory to create")
     ap.add_argument("--n-draft", type=int, default=7)
     ap.add_argument("--p-min", type=float, default=0.0)
-    ap.add_argument("--n-predict", type=int, default=256)
+    ap.add_argument("--n-predict", type=int, default=0,
+                    help="backstop on generated tokens; 0 lets the model stop on its own")
+    ap.add_argument("--system", default="You are a helpful agent.",
+                    help="system prompt; empty string sends none")
+    ap.add_argument("--thinking", action="store_true",
+                    help="let the model emit a <think> block (default: off, so the "
+                         "answer stays in one register)")
+    ap.add_argument("--limit", type=int, default=0, help="only send the first N prompts")
     ap.add_argument("--n-ctx", type=int, default=8192)
     ap.add_argument("--trace-ctx", type=int, default=32)
     ap.add_argument("--port", type=int, default=8080)
@@ -108,6 +139,8 @@ def main() -> int:
     out.mkdir(parents=True, exist_ok=True)
 
     bank = manifest_mod.read(args.bank)
+    if args.limit:
+        bank = bank[:args.limit]
     if not bank:
         print("error: prompt bank is empty", file=sys.stderr)
         return 1
@@ -158,7 +191,7 @@ def main() -> int:
             pid = entry.get("prompt_id", f"prompt_{i:03d}")
             t0 = time.time()
             try:
-                resp = complete(args.port, entry["prompt"], args.n_predict, args.timeout)
+                resp = complete(args.port, entry["prompt"], args, args.timeout)
             except Exception as e:  # keep going; a failed prompt breaks label alignment
                 print(f"  [{i+1}/{len(bank)}] {pid}: FAILED ({e})", file=sys.stderr)
                 results.append({"prompt_id": pid, "ok": False, "error": str(e)})
@@ -166,14 +199,20 @@ def main() -> int:
 
             dt = time.time() - t0
             timings = resp.get("timings", {})
-            print(f"  [{i+1}/{len(bank)}] {pid}: {dt:.1f}s  "
-                  f"{timings.get('predicted_n', '?')} tok  "
-                  f"{timings.get('predicted_per_second', 0):.1f} tok/s", flush=True)
+            n_tok = resp.get("n_tokens") or timings.get("predicted_n") or 0
+            why = resp.get("finish_reason") or "?"
+            print(f"  [{i+1}/{len(bank)}] {pid}: {dt:.1f}s  {n_tok} tok  "
+                  f"{timings.get('predicted_per_second', 0):.1f} tok/s  [{why}]", flush=True)
 
             results.append({
                 "prompt_id": pid,
                 "ok": True,
                 "content": resp.get("content", ""),
+                # why the take ended -- "stop" is the model choosing to stop,
+                # "length" is our backstop cutting it off. Worth recording rather
+                # than inferring from a token count after the fact.
+                "finish_reason": resp.get("finish_reason"),
+                "n_tokens": n_tok,
                 "timings": timings,
                 "wall_s": dt,
             })
