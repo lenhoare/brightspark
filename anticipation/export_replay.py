@@ -62,7 +62,7 @@ def build(run_dir: Path, vocab_path: str | None = None) -> dict:
             # accepted tokens: the draft called these correctly
             for i in range(n_acc):
                 tokens.append({
-                    "t": v.text(b.target_token[i]),
+                    "id": b.target_token[i],
                     "hit": True,
                     "k": i,
                     "block": b.block_idx,
@@ -71,13 +71,14 @@ def build(run_dir: Path, vocab_path: str | None = None) -> dict:
             # full accept) -- this one the draft did not supply
             if n_acc < len(b.target_token):
                 tok = {
-                    "t": v.text(b.target_token[n_acc]),
+                    "id": b.target_token[n_acc],
                     "hit": False,
                     "k": n_acc,
                     "block": b.block_idx,
                 }
                 if b.diverged and n_acc < len(b.draft_tokens):
                     tok["miss"] = v.text(b.draft_tokens[n_acc])
+                    tok["miss_id"] = b.draft_tokens[n_acc]
                     if n_acc < len(b.target_p_of_draft):
                         p = b.target_p_of_draft[n_acc]
                         tok["p"] = round(p, 5) if p is not None else None
@@ -86,6 +87,14 @@ def build(run_dir: Path, vocab_path: str | None = None) -> dict:
                 else:
                     tok["bonus"] = True
                 tokens.append(tok)
+
+        # byte-level tokens can hold a partial character, so the text has to be
+        # decoded across the sequence rather than token by token -- otherwise a
+        # curly quote arrives as three replacement marks
+        pieces = v.stream_text([t["id"] for t in tokens])
+        for tok, piece in zip(tokens, pieces):
+            tok["t"] = piece
+            del tok["id"]
 
         # recover the prefill text that precedes the first verified block
         prefix = ""
